@@ -1,1 +1,11 @@
 /* Add Global styles here */
+.float-left {
+    float: left;
+    margin-right: 15px;
+    margin-bottom: 5px;
+  }
+
+#textNarration {
+  white-space: pre-line;
+  line-height: 1.5
+}

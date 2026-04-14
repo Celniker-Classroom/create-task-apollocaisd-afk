@@ -1,3 +1,8 @@
+<This will be a dungeon crawling or lite rpg game with simple text based commands and outputs,
+mostly centered around a fighting game loop. I have not decided on a theme yet, the stock image of a castle is a placeholder.
+There will be a clear goal, with very limited npc interaction or anything like that, mainly centered around upgrading
+gear, fighting, getting rich or something. The combat system will be a typical turn based, with an attack option, possibly? defend,
+perhaps specific attack types costing AP, item usage, etc etc.>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,7 +12,25 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Your html goes here...</h1>
-    <br>See the <a href="README.md">README</a> for project details
+    <div id = "location">
+        <img src  = "image/Castle-Galway.webp" alt = "Castle" width = 1000 height = auto class = "float-left">
+        <p>Your Character</p>
+        <p>Bobby Joe Bob</p>
+        <p>Level 1 Useless Guy</p>
+        <p>HP: 100/100</p>
+        <p>AP: 100/100</p>
+        <p>Coins: 1000</p>
+        <button>Check Status</button> <br>
+        <button>View Inventory</button> <br>
+        <button>View Quests</button><br>
+        <p>Your Status/Inventory/Quests will appear here...</p>
+    </div>
+    <br clear = all>
+    <div id = "textNarration"> 
+        <p3> 
+            default_text
+        </p3>
+    </div>
+    <input name = "playerChoice" type = "text">
 </body>
 </html>
