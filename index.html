@@ -12,24 +12,31 @@ perhaps specific attack types costing AP, item usage, etc etc.>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id = "location">
-        <img src  = "image/Castle-Galway.webp" alt = "Castle" width = 1000 height = auto class = "float-left">
+    <div id = "game-container">
+        <div id = "location">
+            <img src  = "image/Castle.png" alt = "Castle" width = 80% height = auto class = "float-left">
+        </div>
+        <div id = "textNarration"> 
+            <p3 id = "eventText"> 
+                default_text
+            </p3>
+            <p3 id = "choices"> 
+                default_choices
+            </p3>
+        </div>
+        <input id = "playerChoice" name = "playerChoice" type = "text">
+    </div>
+     <div id = "sidebar">
         <p>Your Character</p>
-        <p>Bobby Joe Bob</p>
-        <p>Level 1 Useless Guy</p>
-        <p>HP: 100/100</p>
-        <p>AP: 100/100</p>
-        <p>Coins: 1000</p>
-        <button>Check Status</button> <br>
-        <button>View Inventory</button> <br>
-        <button>View Quests</button><br>
-        <p>Your Status/Inventory/Quests will appear here...</p>
+        <p id = "characterName" >Bobby Joe Bob</p>
+        <p id = "level" >Level 1 Useless Guy</p>
+        <p id = "hp" >HP: 100/100</p>
+        <p id = "ap" >AP: 100/100</p>
+        <p id = "coins" >Coins: 1000</p>
+        <button id = "checkStatus" >Check Status</button> <br>
+        <button id = "viewInventory" >View Inventory</button> <br>
+        <button id = "viewQuests" >View Quests</button><br>
+        <p id = "statusDisplay" >Your Status/Inventory/Quests will appear here...</p>
     </div>
-    <div id = "textNarration"> 
-        <p3> 
-            default_text
-        </p3>
-    </div>
-    <input name = "playerChoice" type = "text">
 </body>
 </html>
