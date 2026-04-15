@@ -25,7 +25,7 @@ function combatLoop(){
     userInput.addEventListener("keydown", function(processInput){
         if(processInput.key === "Enter"){
             let choice = userInput.value;
-            eventText.textContent = "In Combat: " + enemyName + "Enemy HP: " + enemyHP;
+            eventText.textContent = "In Combat: " + enemyName + "\n Enemy HP: " + enemyHP;
             if(choice == "1"){
                 calculateAttack();
                 if(enemyHP <= 0){
