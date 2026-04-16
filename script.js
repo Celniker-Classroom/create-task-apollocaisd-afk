@@ -1,6 +1,7 @@
 let textNarration = document.getElementById("textNarration");
 let fleeChance = 70
 let playerHP = 100
+let coins = 1000
 
 let enemyHPs = [40, 100, 180]
 let enemyNames = ["Goblin", "Orc", "Troll"]
@@ -25,14 +26,16 @@ function combatLoop(){
     userInput.addEventListener("keydown", function(processInput){
         if(processInput.key === "Enter"){
             let choice = userInput.value;
-            eventText.textContent = "In Combat: " + enemyName + "\n Enemy HP: " + enemyHP;
+            eventText.textContent = "In Combat: " + enemyName;
             if(choice == "1"){
                 calculateAttack();
                 if(enemyHP <= 0){
                     eventText.textContent += "You have defeated the " + enemyName + "!";
+                    
                 }
                 else{
                     enemyMove();
+                    eventText.textContent += "\n Enemy HP: " + enemyHP;
                 }
             }
         }
@@ -42,14 +45,14 @@ function combatLoop(){
 function calculateAttack(){
     let damage = Math.floor(Math.random() * 10) + 5;
     enemyHP = enemyHP - damage;
-    eventText.textContent += "You attack the " + enemyName + " for " + damage + " damage! \n Enemy HP: " + enemyHP;
+    eventText.textContent += "\nYou attack the " + enemyName + " for " + damage + " damage! \n";
     return;
 }
 
 function enemyMove(){
     let damage = Math.floor(Math.random() * enemyDamageRanges[enemy_id]) + enemyDamageMin[enemy_id];
     playerHP = playerHP - damage;
-    eventText.textContent += "The " + enemyName + " attacks you for " + damage + " damage! \n Your HP: " + playerHP;
+    eventText.textContent += "The " + enemyName + " attacks you for " + damage + " damage!";
     return;
 }
 
