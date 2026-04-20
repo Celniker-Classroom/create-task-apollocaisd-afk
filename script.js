@@ -151,10 +151,12 @@ function brewPotion(ingredients){
             let choice = userInput.value;
             userInput.value = "";
             if (choice == "1"){
-                checkPotion("Health Potion", "Cavemite Carapace", "Cavemite Flesh", "Cavemite Eye", ingredients, userInput);
+                checkPotion("Health Potion", ["Cavemite Carapace", "Cavemite Flesh", "Cavemite Eye"], ingredients, userInput);
+                userInput.removeEventListener("keydown", processPotion);
             }
             else if (choice == "2"){
-                checkPotion("Stamina Potion", "Minion Meat", "Heart of Void", "Cavemite Flesh", ingredients, userInput);
+                checkPotion("Stamina Potion", ["Minion Meat", "Heart of Void", "Cavemite Flesh"], ingredients, userInput);
+                userInput.removeEventListener("keydown", processPotion);
             }
             else if (choice == "3"){
                 goDeeper();
@@ -164,35 +166,22 @@ function brewPotion(ingredients){
         });
     }
 
-function checkPotion(typeName, ingredient1, ingredient2, ingredient3, ingredients, userInput){
-    let hasIngredient1 = false;
-    let hasIngredient2 = false;
-    let hasIngredient3 = false;
+function checkPotion(typeName, ingredientsNeeded, ingredients, userInput){
+    let hasIngredients = [false, false, false]
+    let success = [true, true, true]
     for (let i = 0; i < ingredients.length; i++){
-        if (ingredients[i] === ingredient1){
-            if (hasIngredient1){
-                continue;
+        for (let check = 0; check < 3; check++){
+            if (ingredients[i] === ingredientsNeeded[check]){
+                if (hasIngredients[check] === true){
+                    continue;
+                }
+                ingredients.splice(i, 1);
+                hasIngredients[check] = true;
             }
-            ingredients.splice(i, 1);
-            hasIngredient1 = true;
-        }
-        if (ingredients[i] === ingredient2){
-            if (hasIngredient2){
-                continue;
-            }
-            ingredients.splice(i, 1);
-            hasIngredient2 = true;
-        }
-        if (ingredients[i] === ingredient3){
-            if (hasIngredient3){
-                continue;
-            }
-            ingredients.splice(i, 1);
-            hasIngredient3 = true;
         }
     }
     inventory = ingredients;
-    if (hasIngredient1 && hasIngredient2 && hasIngredient3){
+    if (checkHasIngredients(hasIngredients, success)){
         eventText.textContent += "\nYou brew a " + typeName + "!";
                     if (typeName === "Health Potion"){
                         playerHP += 30;
@@ -212,19 +201,33 @@ function checkPotion(typeName, ingredient1, ingredient2, ingredient3, ingredient
     else{
         eventText.textContent += "\nYou don't have the right ingredients to brew a " + typeName + "!";
     }
-    userInput.removeEventListener("keydown", processPotion);
-    choices.textContent = "\n 1. Continue";
+    choices.textContent = "\n 1. Back to Potions Menu \n2. Continue";
     userInput.addEventListener("keydown", function processContinue(event){
         if(event.key === "Enter"){
             let choice = userInput.value;
             userInput.value = "";
             if (choice == "1"){
+                userInput.removeEventListener("keydown", processContinue);
+                brewPotion(inventory);
+            }
+            else if (choice == "2"){
                 goDeeper();
                 userInput.removeEventListener("keydown", processContinue);
             }
         }
     });
 }
+
+
+function checkHasIngredients(real, success){
+    for(let item = 0; item < real.length; item++){
+        if (real[item] !== success[item]){
+            return false;
+        }
+}
+return true;
+}
+
 
 function init(){
     eventText.textContent = "You are standing at the entrance of the cave. You hear faint groaning and creaks coming from inside." +
@@ -246,7 +249,7 @@ function init(){
 function goDeeper(){
     document.getElementById("caveImage").src = "image/CaveInside.png";
     switchbg = Math.floor(Math.random() * 10) + 1;
-    if (switchbg <= 2){
+    if (switchbg <= 3){
         document.getElementById("caveImage").src = "image/CrystalCave.webp";
     }
     const newEvent = Math.floor(Math.random() * 10) + 1;
@@ -287,7 +290,3 @@ function runEncounter(){
     }
 
 init();
-
-//eventText.textContent = "You continue down the dark, damp path into the cave." +
-    //"\n What do you do?"
-    //choices.textContent = "\n1. Go Deeper Into Cave \n2. Brew Potion \n3. Rest \n4. Use Item"
