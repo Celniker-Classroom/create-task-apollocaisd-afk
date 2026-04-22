@@ -26,14 +26,16 @@ function combatInit(){
     enemyHP = enemyHPs[enemyId];
     enemyName = enemyNames[enemyId];
     fleeChance = enemyfleeChances[enemyId];
-    eventText.textContent = "You have encountered a " + enemyName + "! \n Player HP: " + playerHP + "\n Enemy HP: " + enemyHP;
-    choices.textContent = "\n1. Attack \n2. Defend \n3. Skills \n4. Use Item \n5. Flee (" + fleeChance + "%)";
     combatLoop();
 }
 
+//GOTTA BUGFIX COMBATLOOP
 function combatLoop(){
+    eventText.textContent = "You have encountered a " + enemyName + "! \n Player HP: " + playerHP + "\n Enemy HP: " + enemyHP;
+    choices.textContent = "\n1. Attack \n2. Defend \n3. Skills \n4. Use Item \n5. Flee (" + fleeChance + "%)";
     let userInput = document.getElementById("playerChoice");
-    userInput.addEventListener("keydown", function processCombat(event){
+    userInput.addEventListener("keydown", processCombat);
+        function processCombat(event){
         if(event.key === "Enter"){
             if (enemyHP <= 0 || playerHP <= 0){
                 if (playerHP <= 0){ 
@@ -57,15 +59,30 @@ function combatLoop(){
                 }
             }
             else if(choice == "2"){
-                eventText.textContent += "\nYou raise your shield to block the next blow. You regain some stamina.";
-                stamina += Math.floor(Math.random()* 10);
+                staminaRegained = Math.floor(Math.random()* 10);
+                eventText.textContent += "\nYou raise your shield to block the next blow. You regain" + staminaRegained + " stamina.";
+                stamina += staminaRegained;
                 if (stamina > staminaMax){
                     stamina = staminaMax;
                 }
                 enemyMove(0.5)
             }
             else if(choice == "3"){
-                eventText.textContent += "\nYou have no skills to use!";
+                eventText.textContent += "\nSkills Menu: \n Stamina: " + stamina;
+                choices.textContent = "\n1. DOUBLESTRIKE SKILL \n2. DEFENSE SKILL \n3. HEALING SKILL \n4. STEALTH SKILL \n5. DAMAGE BOOST SKILL \n6. Cancel";
+                userInput.removeEventListener("keydown", processCombat);
+                userInput.addEventListener("keydown", function skillSelect(key){
+                    if (key.key === "Enter"){
+                        let skillChoice = userInput.value;
+                        userInput.value = "";
+                        if (skillChoice === "1"){
+                            useSkill(15, "double", 30)
+                            eventText.textContent += "BAH";
+                            userInput.removeEventListener("keydown", skillSelect);
+                            combatLoop()
+                        }
+                    }
+                })
             }
             else if(choice == "4"){
                 eventText.textContent += "\nYou have no items to use!";
@@ -82,7 +99,18 @@ function combatLoop(){
                 }
             }
         }
-    });
+    };
+}
+
+function useSkill(cost, effect, quantity){
+    if (stamina < cost){
+        eventText.textContent = "YOU DONT HAVE ENOUGH SP YOU IDIOT YOU STUPID ADVENTURER HOW COULD YOU NOT HAVE ENOUGH SP I HATE EVERYTHING ABOUT YOU I LITERALLY HATE YOU AND EVERYTHING YOU STAND FOR AAAHHH";
+        return;
+    }
+    stamina = stamina - cost;
+    if (effect = "double"){
+        eventText.textContent = "double :)" + quantity;
+    }
 }
 
 function calculateAttack(){
@@ -169,13 +197,14 @@ function brewPotion(ingredients){
 function checkPotion(typeName, ingredientsNeeded, ingredients, userInput){
     let hasIngredients = [false, false, false]
     let success = [true, true, true]
-    for (let i = 0; i < ingredients.length; i++){
+    for (let i = 0; i < ingredients.length; i++){ //fix later by making backwards
         for (let check = 0; check < 3; check++){
             if (ingredients[i] === ingredientsNeeded[check]){
                 if (hasIngredients[check] === true){
                     continue;
                 }
                 ingredients.splice(i, 1);
+                i = i - 1
                 hasIngredients[check] = true;
             }
         }
@@ -206,13 +235,15 @@ function checkPotion(typeName, ingredientsNeeded, ingredients, userInput){
         if(event.key === "Enter"){
             let choice = userInput.value;
             userInput.value = "";
+            userInput.removeEventListener("keydown", processContinue);
             if (choice == "1"){
-                userInput.removeEventListener("keydown", processContinue);
                 brewPotion(inventory);
             }
             else if (choice == "2"){
                 goDeeper();
-                userInput.removeEventListener("keydown", processContinue);
+            }
+            else{
+                checkPotion(typeName, ingredientsNeeded, ingredients, userInput)
             }
         }
     });
@@ -228,23 +259,16 @@ function checkHasIngredients(real, success){
 return true;
 }
 
-
-function init(){
-    eventText.textContent = "You are standing at the entrance of the cave. You hear faint groaning and creaks coming from inside." +
-    " \nYou clutch the tattered Retrieval Contract in your hand - you must retrieve the Artifact from within, lest the kingdom fall to usurpers.\n What do you do?"
-    choices.textContent = "\n1. Enter Cave"
-    let userInput = document.getElementById("playerChoice");
-    userInput.addEventListener("keydown", function processInput(event){
-        if(event.key === "Enter"){
-            let choice = userInput.value;
-            userInput.value = "";
-            if (choice == "1"){
-                goDeeper();
-                userInput.removeEventListener("keydown", processInput);
-            }
+function runEncounter(){
+    const encounter = Math.floor(Math.random() * 10) + 1;
+        if (encounter <= encounterDifficulty+5){
+            enemyId = 1;
         }
-    });
-}
+        else{
+            enemyId = 0;
+        }
+    combatInit();
+    }
 
 function goDeeper(){
     document.getElementById("caveImage").src = "image/CaveInside.png";
@@ -278,15 +302,21 @@ function goDeeper(){
 }
 }
 
-function runEncounter(){
-    const encounter = Math.floor(Math.random() * 10) + 1;
-        if (encounter <= encounterDifficulty+5){
-            enemyId = 1;
+function init(){
+    eventText.textContent = "You are standing at the entrance of the cave. You hear faint groaning and creaks coming from inside." +
+    " \nYou clutch the tattered Retrieval Contract in your hand - you must retrieve the Artifact from within, lest the kingdom fall to usurpers.\n What do you do?"
+    choices.textContent = "\n1. Enter Cave"
+    let userInput = document.getElementById("playerChoice");
+    userInput.addEventListener("keydown", function processInput(event){
+        if(event.key === "Enter"){
+            let choice = userInput.value;
+            userInput.value = "";
+            if (choice == "1"){
+                goDeeper();
+                userInput.removeEventListener("keydown", processInput);
+            }
         }
-        else{
-            enemyId = 0;
-        }
-    combatInit();
-    }
+    });
+}
 
 init();
