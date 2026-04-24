@@ -26,38 +26,65 @@ let enemyId = 0
 let enemyHP = 0;
 let enemyName = 0;
 
-//CITATION: Ai for the logic of clearing the box when it detects another starting
+//CITATION: the built in coder ai for most of the logic of the Promise-based slowPrint function, allowing mutliple 
+//calls of slowPrint
 let typingTimer;
+let slowPrintQueue = Promise.resolve();
+let slowPrintAbort = null;
 
-function slowPrint(target, message, i = 0){
-    if (i === 0) {
-        clearTimeout(typingTimer); 
-        target.textContent = "";
-    } 
-    function addLetter(){
-        if(i < message.length){
-            target.textContent += message[i];
-            i += 1
-            typingTimer = setTimeout(() => {addLetter();}, 20)
-        }
-    }
-    addLetter();
+function slowPrint(target, message){
+    if (slowPrintAbort) slowPrintAbort();
+
+    let timer;
+    let aborted = false;
+    let rejectCurrent;
+
+    slowPrintAbort = () => {
+        if (aborted) return;
+        aborted = true;
+        clearTimeout(timer);
+        if (rejectCurrent) rejectCurrent(new Error("slowPrint aborted"));
+    };
+
+    const printPromise = slowPrintQueue
+        .catch(() => {})
+        .then(() => new Promise((resolve, reject) => {
+            rejectCurrent = reject;
+            if (aborted) return reject(new Error("slowPrint aborted"));
+            clearTimeout(timer);
+
+            function addLetter(i = 0){
+                if (aborted) return reject(new Error("slowPrint aborted"));
+                if (i < message.length){
+                    target.textContent += message[i];
+                    timer = setTimeout(() => addLetter(i + 1), 35);
+                } else {
+                    slowPrintAbort = null;
+                    resolve();
+                }
+            }
+
+            addLetter();
+        }));
+
+    slowPrintQueue = printPromise.catch(() => {});
+    return printPromise;
 }
 
 function combatInit(){ // set up combat, including enemy stats, and call the combatLoop.
     enemyHP = enemyHPs[enemyId];
     enemyName = enemyNames[enemyId];
     fleeChance = enemyfleeChances[enemyId];
-    eventText.textContent = "You have encountered a " + enemyName + "! \n Player HP: " + playerHP + "\n Enemy HP: " + enemyHP;
+    slowPrint(eventText, "You have encountered a " + enemyName + "! \n Player HP: " + playerHP + "\n Enemy HP: " + enemyHP);
     combatLoop();
 }
 
 //GOTTA BUGFIX COMBATLOOP
-function combatLoop(){ // sets up the event listener for combat and computes the result of each option
+async function combatLoop(){ // sets up the event listener for combat and computes the result of each option
     choices.textContent = "\n1. Attack \n2. Defend \n3. Skills \n4. Use Item \n5. Flee (" + fleeChance + "%)";
     let userInput = document.getElementById("playerChoice");
     userInput.addEventListener("keydown", processCombat);
-        function processCombat(event){
+        async function processCombat(event){
         if(event.key === "Enter"){
             if (enemyHP <= 0 || playerHP <= 0){
                 if (playerHP <= 0){ 
@@ -70,38 +97,38 @@ function combatLoop(){ // sets up the event listener for combat and computes the
             userInput.value = "";
             eventText.textContent = "In Combat: " + enemyName;
             if(choice == "1"){ // basic attack
-                calculateAttack();
+                await calculateAttack();
                 if(enemyHP <= 0){
-                    slowPrint(eventText,  " You have defeated the " + enemyName + "!");
+                    await slowPrint(eventText,  " You have defeated the " + enemyName + "!");
                     userInput.removeEventListener("keydown", processCombat);
                     combatEnd(userInput, false)
                 }
                 else{
-                    enemyMove(1);
+                    await enemyMove(1);
                 }
             }
             else if(choice == "2"){ // defend: reduces damage by 1/2 and regenerates 1-10 Stamina
                 staminaRegained = Math.floor(Math.random()* 10);
-                slowPrint(eventText,  "\nYou raise your shield to block the next blow. You regain " + staminaRegained + " stamina.");
+                await slowPrint(eventText,  "\nYou raise your shield to block the next blow. You regain " + staminaRegained + " stamina.");
                 stamina += staminaRegained;
                 if (stamina > staminaMax){
                     stamina = staminaMax;
                 }
-                enemyMove(0.5)
+                await enemyMove(0.5)
             }
             else if(choice == "3"){ //opens a skill menu
-                slowPrint(eventText,  "\nSkills Menu: \n Stamina: " + stamina);
+                await slowPrint(eventText,  "\nSkills Menu: \n Stamina: " + stamina);
                 choices.textContent = "\n1. DOUBLESTRIKE SKILL \n2. DEFENSE SKILL \n3. HEALING SKILL \n4. STEALTH SKILL \n5. DAMAGE BOOST SKILL \n6. Cancel";
                 userInput.removeEventListener("keydown", processCombat);
-                userInput.addEventListener("keydown", function skillSelect(key){
+                userInput.addEventListener("keydown", async function skillSelect(key){
                     if (key.key === "Enter"){
                         let skillChoice = userInput.value;
                         userInput.value = "";
                         if (skillChoice === "1"){
-                            useSkill(15, "double", 30, "");
+                            await useSkill(15, "double", 30, "");
                         }
                         else if(skillChoice === "2"){
-                            useSkill(20, "defenseBoost", 0.75, 3);
+                            await useSkill(20, "defenseBoost", 0.75, 3);
                         }
                         else if(skillChoice === "6"){
                             skillWorked = true
@@ -114,17 +141,17 @@ function combatLoop(){ // sets up the event listener for combat and computes the
                 })
             }
             else if(choice == "4"){ //allows a player to use Items like Potions, magic items, etc during battle
-                slowPrint(eventText,  "\nYou have no items to use!");
+                await slowPrint(eventText,  "\nYou have no items to use!");
             }
             else if(choice == "5"){ //gives a player a chance to flee from the enemy
                 roll = Math.floor(Math.random() * 100)
                 if (roll < fleeChance + 1){
-                    slowPrint(eventText,  "\n You flee from battle.");
+                    await slowPrint(eventText,  "\n You flee from battle.");
                     userInput.removeEventListener("keydown", processCombat);
                     combatEnd(userInput, true);
                 }
                 else{
-                    enemyMove(1);
+                    await enemyMove(1);
                 }
             }
         }
@@ -135,38 +162,28 @@ function useSkill(cost, effect, quantity, duration){
     if (stamina < cost){
         eventText.textContent = "YOU DONT HAVE ENOUGH SP YOU IDIOT YOU STUPID ADVENTURER HOW COULD YOU NOT HAVE ENOUGH SP I HATE EVERYTHING ABOUT YOU I LITERALLY HATE YOU AND EVERYTHING YOU STAND FOR AAAHHH";
         skillWorked = false
-        return;
+        return Promise.resolve();
     }
     stamina = stamina - cost;
     if (effect === "double"){
-        eventText.textContent = "You use a burst of energy and, catching the enemy off guard, strike twice!"
+        return slowPrint(eventText, "You use a burst of energy and, catching the enemy off guard, strike twice!");
     }
     skillWorked = true;
+    return Promise.resolve();
 }
 
-function calculateAttack(modifier){
+function calculateAttack(modifier = 1){
     attackRoll = (Math.floor(Math.random()*20));
-    if (attackRoll < 6){
-        slowPrint(eventText,  "\nYou swing at the " + enemyName + " with your sword, but it dodges out of the way!");
-        return;
-    }
-    else if(attackRoll < 8){
-        slowPrint(eventText,  "\nYou take a swing at the " + enemyName + " but it glances harmlessly off of its armor.");
-        return;
-    }
     let damage = (Math.floor(Math.random() * 10) + 5) * modifier;
     enemyHP = enemyHP - damage;
-    slowPrint(eventText,  "\nYou attack the " + enemyName + " for " + damage + " damage!");
-    return;
+    return slowPrint(eventText,  "\nYou attack the " + enemyName + " for " + damage + " damage!");
 }
 
 function enemyMove(playerDefMultiplier){
     let damage = Math.round((Math.floor(Math.random() * enemyDamageRanges[enemyId]) + enemyDamageMin[enemyId]) * playerDefMultiplier);
     playerHP = playerHP - damage;
-    slowPrint(eventText,  "\nThe " + enemyName + " attacks you for " + damage + " damage!");
-    slowPrint(eventText,  "\n Enemy HP: " + enemyHP);
-    slowPrint(eventText,  "\n Your HP: " + playerHP);
-    return;
+    return slowPrint(eventText,  "\nThe " + enemyName + " attacks you for " + damage + " damage!" + 
+    "\n Enemy HP: " + enemyHP + "\n Your HP: " + playerHP);
 }
 
 function combatEnd(userInput, fled){
