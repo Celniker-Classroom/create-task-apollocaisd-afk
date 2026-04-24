@@ -1,7 +1,7 @@
 #game-container{
     display: flex;
     flex-direction: column;
-    width: 90%;
+    width: 75%;
     height: auto;
     white-space: pre-line
 }
@@ -9,4 +9,28 @@
 #playerChoice{
     width: 10%;
     height: auto;
+    background-color: black;
+    color: grey;
+
+}
+
+#sidebar{
+    outline-color: grey;
+    outline-style: solid;
+    border-width: 20px;
+    width: 25%;
+    height: 80vh;
+    float: right;
+}
+
+#playerChoice{
+    border: none;
+    outline: none;
+}
+
+body{
+    background-color: black;
+    color: grey; 
+    font-size: 18px;
+    font-family: "Monaco", "Consolas", "Courier New", monospace;
 }
