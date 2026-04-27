@@ -281,8 +281,10 @@ async function combatEnd(userInput, fled){
         await calcRewards("Heart of Void", 5)
         await calcRewards("Minion Armor", 2)
     }
-    else if(enemyName === "Warden"){
+    else if(enemyName === "Guardian"){
         await calcRewards("Artifact", 10)
+        eventText.textContent = "";
+        slowPrint(eventText, "With the Guardian defeated, you claim the Artifact! You have won the game!");
     }
 }
     await slowPrint(eventText,  "\nThe cave is quiet once again, save for the faint dripping of water on the stone floor.");
