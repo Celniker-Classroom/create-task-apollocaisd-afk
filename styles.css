@@ -1,10 +1,7 @@
 #game-container{
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    width: 75%;
-    height: auto;
-    white-space: pre-line
+    white-space: pre-line;
+    width: 80%;
+    height: 80%;
 }
 
 #playerChoice{
@@ -15,15 +12,6 @@
 
 }
 
-#sidebar{
-    outline-color: grey;
-    outline-style: solid;
-    border-width: 20px;
-    width: 250px;
-    height: 80vh;
-    float: right;
-}
-
 #playerChoice{
     border: none;
     outline: none;
@@ -31,8 +19,8 @@
 }
 
 body{
-    display: flex;
     margin: 0;
+    width: 100vw;
     height: 100vh;
     background-color: black;
     color: grey; 
@@ -43,8 +31,7 @@ body{
 /* CITATIONS: AI generated code for stylizing the input so that
 the "> " prefix is immutable */
 #inputContainer {
-    display: inline-block;
-    width: 30%;
+    width: 100%;
     background-color: black;
     color: grey;
     border: none;

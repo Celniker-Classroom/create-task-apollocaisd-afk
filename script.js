@@ -12,11 +12,13 @@ let playerHP = playerHPMax
 let staminaMax = 100
 let stamina = staminaMax
 let inventory = []
+let inventoryDisplay = []
 let usables = []
 let combatActive = false;
 let skillWorked = true;
 let isProcessing = false;
 let currentHandler = null;
+let combatEncounters = 0;
 
 //initialize enemy stats
 let enemyHPs = [40, 80, 200]
@@ -37,8 +39,6 @@ let slowPrintAbort = null;
 let userInput = document.getElementById("playerChoice");
 
 function setHandler(handler){
-    eventText.textContent = "SET HANDLER →" + (handler?.name || "anonymous");
-
     if (currentHandler){
         userInput.removeEventListener("keydown", currentHandler);
     }
@@ -57,7 +57,7 @@ function slowPrint(target, message){
     
     // Create a named skip handler so we can remove it later
     const skipHandler = function(skip){
-        if (skip.key === "a") {
+        if (skip.key === "qiwoptn") {
             if (slowPrintAbort) slowPrintAbort();
             target.textContent = target.textContent.slice(0, -messageSoFar.length) + message;
         }
@@ -102,8 +102,11 @@ function slowPrint(target, message){
 
 function combatInit(){ // set up combat, including enemy stats, and call the combatLoop.
     enemyHP = enemyHPs[enemyId];
+    combatEncounters += 1;
     enemyName = enemyNames[enemyId];
     fleeChance = enemyfleeChances[enemyId];
+    playerDefMultiplier = 1;
+    playerDamageMultiplier = 1;
     eventText.textContent = "";
     slowPrint(eventText, "\nYou have encountered a " + enemyName + "! \n Player HP: " + playerHP + "\n Enemy HP: " + enemyHP);
     combatLoop();
@@ -115,7 +118,6 @@ async function combatLoop(){ // sets up the event listener for combat and comput
     choices.textContent = "\n1. Attack \n2. Defend \n3. Skills \n4. Use Item \n5. Flee (" + fleeChance + "%)";
         async function processCombat(event){
         if(event.key === "Enter"){
-            eventText.textContent += "COMBAT HANDLER FIRED";
             if (isProcessing) return;
             isProcessing = true;
             if (enemyHP <= 0 || playerHP <= 0){
@@ -152,25 +154,35 @@ async function combatLoop(){ // sets up the event listener for combat and comput
             else if(choice == "3"){ //opens a skill menu
                 await slowPrint(eventText,  "\nSkills Menu: \n Stamina: " + stamina);
                 choices.textContent = "\n1. DOUBLESTRIKE SKILL \n2. DEFENSE SKILL \n3. HEALING SKILL \n4. STEALTH SKILL \n5. DAMAGE BOOST SKILL \n6. Cancel";
-                    setHandler(async function skillSelect(key){
+                    setHandler(skillSelect);
+                    async function skillSelect(key){
                         if (key.key === "Enter"){
                             let skillChoice = userInput.value;
                             userInput.value = "";
                             if (skillChoice === "1"){
-                                await useSkill(15, "double", 30, "");
+                                await useSkill(15, "double", 30);
                             }
                             else if(skillChoice === "2"){
-                                await useSkill(20, "defenseBoost", 0.75, 3);
+                                await useSkill(200, "defenseBoost", 0.75);
+                            }
+                            else if(skillChoice === "3"){
+                                await useSkill(30, "heal", 20);
+                            }
+                            else if(skillChoice === "4"){
+                                await useSkill(50, "stealth", 0.5);
+                            }
+                            else if(skillChoice === "5"){
+                                await useSkill(100, "damageBoost", 1.5);
                             }
                             else if(skillChoice === "6"){
+                                eventText.textContent = "cancelled";
                                 skillWorked = true;
                             }
-
                             if (skillWorked){
-                                setHandler(processCombat); // return to combat
+                                setHandler(combatLoop); // return to combat
                             }
                         }
-                    });
+                    }
             }
             else if(choice == "4"){ //allows a player to use Items like Potions, magic items, etc during battle
                 await slowPrint(eventText,  "\nYou have no items to use!");
@@ -181,6 +193,7 @@ async function combatLoop(){ // sets up the event listener for combat and comput
                 if (roll < fleeChance + 1){
                     await slowPrint(eventText,  "\n You flee from battle.");
                     await combatEnd(userInput, true);
+                    return;
                 }
                 else{
                     await enemyMove(1);
@@ -195,23 +208,52 @@ async function combatLoop(){ // sets up the event listener for combat and comput
     setHandler(processCombat);
 }
 
-function useSkill(cost, effect, quantity, duration){
+async function useSkill(cost, effect, quantity){
     if (stamina < cost){
-        eventText.textContent = "YOU DONT HAVE ENOUGH SP YOU IDIOT YOU STUPID ADVENTURER HOW COULD YOU NOT HAVE ENOUGH SP I HATE EVERYTHING ABOUT YOU I LITERALLY HATE YOU AND EVERYTHING YOU STAND FOR AAAHHH";
-        skillWorked = false
+        eventText.textContent = "Not enough stamina!";
+        setHandler(skillSelect);
         return Promise.resolve();
     }
+    eventText.textContent = "";
     stamina = stamina - cost;
     if (effect === "double"){
         slowPrint(eventText, "You use a burst of energy and, catching the enemy off guard, strike twice!");
+        await calculateAttack(2);
+        if(enemyHP <= 0){
+                    await slowPrint(eventText,  " You have defeated the " + enemyName + "!");
+                    await combatEnd(userInput, false)
+                }
+                else{
+                    await enemyMove(1);
+                }
+                isProcessing = false;
+    }
+    else if (effect === "defenseBoost"){
+        slowPrint(eventText, "You focus and harden your defenses, reducing incoming damage for the next 3 turns!");
+        playerDefMultiplier = 0.75;
+    }
+    else if (effect === "heal"){
+        playerHP += quantity;
+        if (playerHP > playerHPMax){
+            playerHP = playerHPMax;
+        }
+        slowPrint(eventText,  "\nYou channel your energy into a healing spell and restore your HP to " + playerHP + "!");
+    }
+    else if (effect === "stealth"){
+        eventText.textContent = "";
+        slowPrint(eventText, "You blend into the shadows, making it easier to flee!");
+        fleeChance += 20;
+    }
+    else if (effect === "damageBoost"){
+        slowPrint(eventText, "You focus your energy into a powerful strike, increasing your damage for the duration of the battle!");
+        playerDamageMultiplier = 1.5;
     }
     skillWorked = true;
     return Promise.resolve();
 }
 
-function calculateAttack(modifier = 1){
-    attackRoll = (Math.floor(Math.random()*20));
-    let damage = (Math.floor(Math.random() * 10) + 50) * modifier;
+function calculateAttack(modifier = playerDamageMultiplier){
+    let damage = (Math.floor(Math.random() * 12) + 6) * modifier;
     enemyHP = enemyHP - damage;
     eventText.textContent = "\nYou attack the " + enemyName + " for " + damage + " damage!";
 }
@@ -272,8 +314,10 @@ function brewPotion(ingredients){
     slowPrint(eventText, "You find a rocky alcove where you can place your small brewer's pot. You can brew a potion to restore HP or Stamina," +
     "but you need the right ingredients. \n What do you want to brew?");
     choices.textContent = "\n 1. Health Potion (Restores 30 HP, Uses: Cavemite Carapace, Cavemite Flesh, Cavemite Eye)" +
-    "\n 2. Stamina Potion (Restores 30 Stamina, Uses: Minion Meat, Heart of Void, Cavemite Flesh) \n 3. Big Health Potion" + 
-    "(Restores 50 HP, Uses: Cavemite \n 4. Cancel";
+    "\n 2. Stamina Potion (Restores 30 Stamina, Uses: Minion Meat, Heart of Void, Cavemite Flesh) \n 3. Potion of Vitality" + 
+    "(Restores 50 HP, Uses: Cavemite Flesh x2, Cavemite Carapace, Cavemite Eye, Heart of Void) \n" + 
+    "4. Potion of Life (Sets HP Max to 150 and instantly restores HP to full, Uses: Minion Meat x3, Minion Armor, Heart of Void x3)" + 
+    "\n 5. Potion of Endurance (Sets Stamina Max to 150 and instantly restores Stamina to full, Uses: Minion Meat x3, Minion Armor, Heart of Void x3) \n 6. Cancel";
     userInput.addEventListener("keydown", function processPotion(event){
         if(event.key === "Enter"){
             let choice = userInput.value;
@@ -287,8 +331,24 @@ function brewPotion(ingredients){
                 userInput.removeEventListener("keydown", processPotion);
             }
             else if (choice == "3"){
-                goDeeper();
+                checkPotion("Potion of Vitality", ["Cavemite Flesh", "Cavemite Flesh", "Cavemite Carapace", "Cavemite Eye", "Heart of Void"], ingredients, userInput);
                 userInput.removeEventListener("keydown", processPotion);
+            }
+            else if (choice == "4"){
+                checkPotion("Potion of Life", ["Minion Meat", "Minion Meat", "Minion Meat", "Minion Armor", "Heart of Void", "Heart of Void", "Heart of Void"], ingredients, userInput);
+                userInput.removeEventListener("keydown", processPotion);
+            }
+            else if (choice == "5"){
+                checkPotion("Potion of Endurance", ["Minion Meat", "Minion Meat", "Minion Meat", "Minion Armor", "Heart of Void", "Heart of Void", "Heart of Void"], ingredients, userInput);
+                userInput.removeEventListener("keydown", processPotion);
+            }
+            else if (choice == "6"){
+                noEncounter();
+                userInput.removeEventListener("keydown", processPotion);
+            }
+            else{
+                userInput.removeEventListener("keydown", processPotion);
+                brewPotion(ingredients);
             }
         }
         });
@@ -326,6 +386,23 @@ function checkPotion(typeName, ingredientsNeeded, ingredients, userInput){
                         }
                         slowPrint(eventText,  "\nYou drink the Stamina Potion and restore your Stamina to " + stamina + "!");
                     }
+                    else if (typeName === "Potion of Vitality"){
+                        playerHP += 50;
+                        if (playerHP > playerHPMax){
+                            playerHP = playerHPMax;
+                        }
+                        slowPrint(eventText,  "\nYou drink the Potion of Vitality and restore your HP to " + playerHP + "!");
+                    }
+                    else if (typeName === "Potion of Life"){
+                        playerHPMax = 150;
+                        playerHP = playerHPMax;
+                        slowPrint(eventText,  "\nYou drink the Potion of Life and increase your max HP to 150 and restore your HP to full!");
+                    }
+                    else if (typeName === "Potion of Endurance"){
+                        staminaMax = 150;
+                        stamina = staminaMax;
+                        slowPrint(eventText,  "\nYou drink the Potion of Endurance and increase your max Stamina to 150 and restore your Stamina to full!");
+                    }
                 }
     else{
         slowPrint(eventText,  "\nYou don't have the right ingredients to brew a " + typeName + "!");
@@ -360,6 +437,12 @@ return true;
 }
 
 function runEncounter(){
+    if (combatEncounters >= 40){
+        eventText.textContent = "";
+        slowPrint(eventText, "As you venture deeper into the cave, you feel an ominous presence looming over you. Suddenly, a towering figure emerges from the shadows - the Guardian of the Artifact! \n Player HP: " + playerHP);
+        enemyId = 2;
+    }
+    else{
     const encounter = Math.floor(Math.random() * 10) + 1;
         if (encounter <= encounterDifficulty){
             enemyId = 1;
@@ -369,6 +452,7 @@ function runEncounter(){
         }
     combatInit();
     }
+}
 
 function goDeeper(){
     document.getElementById("caveImage").src = "image/CaveInside.png";
@@ -381,10 +465,14 @@ function goDeeper(){
         runEncounter();
     }
     else{
+        noEncounter();
+    }
+}
+function noEncounter(){
         eventText.textContent = "";
         slowPrint(eventText, "You continue down the dark, damp path into the cave. \nHP: " + playerHP +
-        "\n What do you do?")
-        choices.textContent = "\n1. Go Deeper Into Cave \n2. Brew Potion \n3. Rest \n4. Open Inventory"
+        "\nStamina: " + stamina + "\n What do you do?")
+        choices.textContent = "\n1. Go Deeper Into Cave \n2. Brew Potion \n3. Open Inventory \n4. Use Item";
         userInput.addEventListener("keydown", function processInput(event){
         if(event.key === "Enter"){
             let choice = userInput.value;
@@ -397,10 +485,39 @@ function goDeeper(){
                 brewPotion(inventory);
                 userInput.removeEventListener("keydown", processInput);
             }
-        }
-    });
+            else if (choice == "3"){
+                eventText.textContent = "";
+                userInput.removeEventListener("keydown", processInput);
+                inventoryDisplay = "Inventory: \n";
+                const allItems = ["Cavemite Carapace", "Cavemite Flesh", "Cavemite Eye", "Minion Meat", "Heart of Void", "Minion Armor", "Artifact"];
+                for (let i = 0; i < allItems.length; i++){
+                    let count = 0;
+                    for (let j = 0; j < inventory.length; j++){
+                        if (inventory[j] === allItems[i]){
+                            count++;
+                        }
+                    }
+                    if (count > 0){
+                        inventoryDisplay += allItems[i] + ": " + count + "\n ";
+                    }
+                }
+                slowPrint(eventText, inventoryDisplay);
+                choices.textContent = "\n1. Close Inventory";
+                userInput.addEventListener("keydown", function closeInventory(event){
+                    if(event.key === "Enter"){
+                        let choice = userInput.value;
+                        userInput.value = "";
+                        if (choice == "1"){
+                            noEncounter();
+                            userInput.removeEventListener("keydown", closeInventory);
+                        }
+                    }
+                });
+            }
+    }      
+});
 }
-}
+
 
 function init(){
     eventText.textContent = "";
