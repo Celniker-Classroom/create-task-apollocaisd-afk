@@ -5,7 +5,8 @@
 
 //initialize variables
 let textNarration = document.getElementById("textNarration");
-let encounterDifficulty = 3
+let minionThreshold = 3;
+let crimsonThreshold = 0;
 let fleeChance = 70
 let playerHPMax = 100
 let playerHP = playerHPMax
@@ -22,10 +23,10 @@ let combatEncounters = 0;
 
 //initialize enemy stats
 let enemyHPs = [40, 80, 200]
-let enemyNames = ["Cavemite", "Minion", "Guardian"]
-let enemyfleeChances = [50, 40, 0]
-let enemyDamageRanges = [5, 9, 15]
-let enemyDamageMin = [3, 6, 15];
+let enemyNames = ["Cavemite", "Minion", "Crimson Minion", "Guardian"]
+let enemyfleeChances = [50, 40, 30, 0]
+let enemyDamageRanges = [5, 9, 11, 15]
+let enemyDamageMin = [3, 6, 8, 15];
 let enemyId = 0
 let enemyHP = 0;
 let enemyName = 0;
@@ -38,6 +39,8 @@ let slowPrintQueue = Promise.resolve();
 let slowPrintAbort = null;
 let userInput = document.getElementById("playerChoice");
 
+//a function to add and remove event Listeners, CITATION: built by ChatGPT,
+//but I implemented it inconsistentally to save time (just to fix 1 bug)
 function setHandler(handler){
     if (currentHandler){
         userInput.removeEventListener("keydown", currentHandler);
@@ -46,6 +49,9 @@ function setHandler(handler){
     userInput.addEventListener("keydown", handler);
 }
 
+//a function that returns a typewriter effect for style and flavor,
+//it caused basically all of my debugging issues ;-;
+//Why do i do this to myself
 function slowPrint(target, message){
     if (slowPrintAbort) slowPrintAbort();
 
@@ -54,7 +60,8 @@ function slowPrint(target, message){
     let rejectCurrent;
     let messageSoFar = "";
     
-    // Create a named skip handler so we can remove it later
+    // a function AI generated but didn't work and somehow when I tried to
+    // remove it it started breaking code, to nullify it i just made the key nonexistent to save time during bugfixing
     const skipHandler = function(skip){
         if (skip.key === "qiwoptn") {
             if (slowPrintAbort) slowPrintAbort();
@@ -111,7 +118,7 @@ function combatInit(){ // set up combat, including enemy stats, and call the com
     combatLoop();
 }
 
-//GOTTA BUGFIX COMBATLOOP
+//the basic loop of combat, where the player can choose to attack, defend, use skills, or flee, and the enemy will attack back after each action. Also checks for end of combat after each action.
 async function combatLoop(){ // sets up the event listener for combat and computes the result of each option
     isProcessing = false;
     choices.textContent = "\n1. Attack \n2. Defend \n3. Skills \n4. Flee (" + fleeChance + "%)";
@@ -203,6 +210,8 @@ async function combatLoop(){ // sets up the event listener for combat and comput
     setHandler(processCombat);
 }
 
+//a helper function to check each skill and compute the result, if
+//the player has enough stamina
 async function useSkill(cost, effect, quantity){
     if (stamina < cost){
         eventText.textContent = "Not enough stamina!";
@@ -260,6 +269,9 @@ function enemyMove(playerDefMultiplier){
     "\n Enemy HP: " + enemyHP + "\n Your HP: " + playerHP);
 }
 
+//the end of combat, detailing game logic after either defeating the
+//enemy or fleeing, and then utilizing the calcRewards function to
+//give the player items
 async function combatEnd(userInput, fled){
     isProcessing = false;
     if (fled === false){
@@ -275,6 +287,11 @@ async function combatEnd(userInput, fled){
         await calcRewards("Minion Meat", 7)
         await calcRewards("Heart of Void", 5)
         await calcRewards("Minion Armor", 2)
+    }
+    else if(enemyName === "Crimson Minion"){
+        await calcRewards("Minion Meat", 8)
+        await calcRewards("Heart of Void", 7)
+        await calcRewards("Minion Armor", 5)
     }
     else if(enemyName === "Guardian"){
         await calcRewards("Artifact", 10)
@@ -296,6 +313,8 @@ async function combatEnd(userInput, fled){
     };
 }
 
+//a helper function to calculate chances of getting rewards, highly modular
+//and repeatable for literally any values
 function calcRewards(reward, chanceThreshold){
     return new Promise((resolve) => {
         if (Math.floor(Math.random() * 10) <= chanceThreshold){
@@ -306,6 +325,8 @@ function calcRewards(reward, chanceThreshold){
     });
 }
 
+//the function for brewing potions, which initializes it and then calls
+//the checkPotion function
 function brewPotion(ingredients){
     eventText.textContent = "";
     slowPrint(eventText, "You find a rocky alcove where you can place your small brewer's pot. You can brew a potion to restore HP or Stamina," +
@@ -351,6 +372,7 @@ function brewPotion(ingredients){
         });
     }
 
+//checks if the player has enough ingredients and returns a result
 function checkPotion(typeName, ingredientsNeeded, ingredients, userInput){
     let hasIngredients = [false, false, false]
     let success = [true, true, true]
@@ -423,7 +445,7 @@ function checkPotion(typeName, ingredientsNeeded, ingredients, userInput){
     });
 }
 
-
+//a short helper function to check if the ingredients match the requirements
 function checkHasIngredients(real, success){
     for(let item = 0; item < real.length; item++){
         if (real[item] !== success[item]){
@@ -433,17 +455,23 @@ function checkHasIngredients(real, success){
 return true;
 }
 
+//computes a random chance of which enemy to encounter, scaling in 
+//difficulty as the game progresses
 function runEncounter(){
-    encounterDifficulty = Math.round(combatEncounters / 5) + 3;
+    minionThreshold = Math.round(combatEncounters / 5) + 3;
+    crimsonThreshold = Math.round(combatEncounters / 5);
     if (combatEncounters >= 20){
         eventText.textContent = "";
         slowPrint(eventText, "You reach the heart of the cave. Peering inside a cavern, you see someting glinting - it is the Artifact! Suddenly, a towering figure emerges from the shadows - the Guardian of the Artifact! \n Player HP: " + playerHP);
-        enemyId = 2;
+        enemyId = 3;
     }
     else{
     const encounter = Math.floor(Math.random() * 10) + 1;
-        if (encounter <= encounterDifficulty){
+        if (encounter <= minionThreshold){
             enemyId = 1;
+        }
+        else if (encounter <= crimsonThreshold){
+            enemyId = 2;
         }
         else{
             enemyId = 0;
@@ -452,6 +480,8 @@ function runEncounter(){
     }
 }
 
+//the main game loop framework, which decides either to set a combat
+//state or a non-combat state, and then calls the appropriate functions to handle each
 function goDeeper(){
     document.getElementById("caveImage").src = "image/CaveInside.png";
     switchbg = Math.floor(Math.random() * 10) + 1;
@@ -466,6 +496,7 @@ function goDeeper(){
         noEncounter();
     }
 }
+//the function when no combat is encountered, allowing the player to brew potions, check inventory, or just continue deeper into the cave
 function noEncounter(){
         eventText.textContent = "";
         slowPrint(eventText, "You continue down the dark, damp path into the cave. \nHP: " + playerHP +
@@ -517,7 +548,7 @@ function noEncounter(){
 };
 }
 
-
+//initialization of the game, setting up the initial state and event listeners
 function init(){
     eventText.textContent = "";
     choices.textContent = "";
