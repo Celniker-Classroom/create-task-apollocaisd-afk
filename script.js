@@ -143,7 +143,7 @@ async function combatLoop(){ // sets up the event listener for combat and comput
                     await combatEnd(userInput, false)
                 }
                 else{
-                    await enemyMove(1);
+                    await enemyMove(playerDefMultiplier);
                 }
                 isProcessing = false;
             }
@@ -198,7 +198,7 @@ async function combatLoop(){ // sets up the event listener for combat and comput
                     return;
                 }
                 else{
-                    await enemyMove(1);
+                    await enemyMove(playerDefMultiplier);
                 }
                 isProcessing = false;
             }
@@ -222,18 +222,18 @@ async function useSkill(cost, effect, quantity){
     stamina = stamina - cost;
     if (effect === "double"){
         slowPrint(eventText, "You use a burst of energy and, catching the enemy off guard, strike twice!");
-        await calculateAttack(2);
+        await calculateAttack(2 * playerDamageMultiplier);
         if(enemyHP <= 0){
                     await slowPrint(eventText,  " You have defeated the " + enemyName + "!");
                     await combatEnd(userInput, false)
                 }
                 else{
-                    await enemyMove(1);
+                    await enemyMove(playerDefMultiplier);
                 }
                 isProcessing = false;
     }
     else if (effect === "defenseBoost"){
-        slowPrint(eventText, "You focus and harden your defenses, reducing incoming damage for the next 3 turns!");
+        slowPrint(eventText, "You focus and harden your defenses, reducing incoming damage for the remainder of combat!");
         playerDefMultiplier = 0.75;
     }
     else if (effect === "heal"){
@@ -242,6 +242,7 @@ async function useSkill(cost, effect, quantity){
             playerHP = playerHPMax;
         }
         slowPrint(eventText,  "\nYou channel your energy into a healing spell and restore your HP to " + playerHP + "!");
+        await enemyMove(playerDefMultiplier);
     }
     else if (effect === "stealth"){
         eventText.textContent = "";
@@ -257,7 +258,7 @@ async function useSkill(cost, effect, quantity){
 }
 
 function calculateAttack(modifier = playerDamageMultiplier){
-    let damage = (Math.floor(Math.random() * 12) + 6) * modifier;
+    let damage = (Math.floor(Math.random() * 9) + 8) * modifier;
     enemyHP = enemyHP - damage;
     eventText.textContent = "\nYou attack the " + enemyName + " for " + damage + " damage!";
 }

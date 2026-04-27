@@ -1,31 +1,38 @@
 #game-container{
-    white-space: pre-line;
     width: 80%;
-    height: 80%;
-}
-
-#playerChoice{
-    width: 10%;
     height: auto;
-    background-color: black;
-    color: grey;
-
+    padding-left: 15%;
 }
 
-#playerChoice{
-    border: none;
-    outline: none;
-    font-size: 18px;
+#image{
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+#eventText, #choices {
+    white-space: pre-line;
+    margin: 0;
+    padding-bottom: 5px;
 }
 
 body{
     margin: 0;
+    padding-left: 30px;
     width: 100vw;
-    height: 100vh;
+    height: 60vh;
     background-color: black;
     color: grey; 
     font-size: 18px;
     font-family: "Monaco", "Consolas", "Courier New", monospace;
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 0px;
+    padding-bottom: 10px;
 }
 
 /* CITATIONS: AI generated code for stylizing the input so that
