@@ -1,4 +1,5 @@
 #game-container{
+    flex: 1;
     display: flex;
     flex-direction: column;
     width: 75%;
@@ -18,7 +19,7 @@
     outline-color: grey;
     outline-style: solid;
     border-width: 20px;
-    width: 25%;
+    width: 250px;
     height: 80vh;
     float: right;
 }
@@ -26,11 +27,47 @@
 #playerChoice{
     border: none;
     outline: none;
+    font-size: 18px;
 }
 
 body{
+    display: flex;
+    margin: 0;
+    height: 100vh;
     background-color: black;
     color: grey; 
     font-size: 18px;
     font-family: "Monaco", "Consolas", "Courier New", monospace;
+}
+
+/* CITATIONS: AI generated code for stylizing the input so that
+the "> " prefix is immutable */
+#inputContainer {
+    display: inline-block;
+    width: 30%;
+    background-color: black;
+    color: grey;
+    border: none;
+    outline: none;
+    font-size: 18px;
+    font-family: "Monaco", "Consolas", "Courier New", monospace;
+    padding: 0;
+}
+
+#prefix {
+    float: left;
+    color: grey;
+    user-select: none;
+    width: 20px;
+}
+
+#playerChoice {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: grey;
+    font-size: 18px;
+    font-family: inherit;
+    width: calc(100% - 20px);
+    box-sizing: border-box;
 }
