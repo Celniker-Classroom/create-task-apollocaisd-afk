@@ -23,7 +23,7 @@ let combatEncounters = 0;
 //initialize enemy stats
 let enemyHPs = [40, 80, 200]
 let enemyNames = ["Cavemite", "Minion", "Guardian"]
-let enemyfleeChances = [50, 40, 30]
+let enemyfleeChances = [50, 40, 0]
 let enemyDamageRanges = [5, 9, 15]
 let enemyDamageMin = [3, 6, 15];
 let enemyId = 0
@@ -42,7 +42,6 @@ function setHandler(handler){
     if (currentHandler){
         userInput.removeEventListener("keydown", currentHandler);
     }
-
     currentHandler = handler;
     userInput.addEventListener("keydown", handler);
 }
@@ -115,7 +114,7 @@ function combatInit(){ // set up combat, including enemy stats, and call the com
 //GOTTA BUGFIX COMBATLOOP
 async function combatLoop(){ // sets up the event listener for combat and computes the result of each option
     isProcessing = false;
-    choices.textContent = "\n1. Attack \n2. Defend \n3. Skills \n4. Use Item \n5. Flee (" + fleeChance + "%)";
+    choices.textContent = "\n1. Attack \n2. Defend \n3. Skills \n4. Flee (" + fleeChance + "%)";
         async function processCombat(event){
         if(event.key === "Enter"){
             if (isProcessing) return;
@@ -141,8 +140,8 @@ async function combatLoop(){ // sets up the event listener for combat and comput
                 }
                 isProcessing = false;
             }
-            else if(choice == "2"){ // defend: reduces damage by 1/2 and regenerates 1-10 Stamina
-                staminaRegained = Math.floor(Math.random()* 10);
+            else if(choice == "2"){ // defend: reduces damage by 1/2 and regenerates 5-10 Stamina
+                staminaRegained = Math.floor(Math.random()* 6) + 5;
                 await slowPrint(eventText,  "\nYou raise your shield to block the next blow. You regain " + staminaRegained + " stamina.");
                 stamina += staminaRegained;
                 if (stamina > staminaMax){
@@ -153,29 +152,29 @@ async function combatLoop(){ // sets up the event listener for combat and comput
             }
             else if(choice == "3"){ //opens a skill menu
                 await slowPrint(eventText,  "\nSkills Menu: \n Stamina: " + stamina);
-                choices.textContent = "\n1. DOUBLESTRIKE SKILL \n2. DEFENSE SKILL \n3. HEALING SKILL \n4. STEALTH SKILL \n5. DAMAGE BOOST SKILL \n6. Cancel";
+                choices.textContent = "\n1. Heroic Strike (25 stamina, double damage) \n2. Defensive Stance (20 stamina, 25% damage reduction)" +
+                "\n3. Healing (30 stamina, 20 HP healed) \n4. Stealth (15 stamina, +30% flee chance) \n5. Offensive Stance(35 stamina, +50% damage boost) \n6. Cancel";
                     setHandler(skillSelect);
                     async function skillSelect(key){
                         if (key.key === "Enter"){
                             let skillChoice = userInput.value;
                             userInput.value = "";
                             if (skillChoice === "1"){
-                                await useSkill(15, "double", 30);
+                                await useSkill(25, "double", "");
                             }
                             else if(skillChoice === "2"){
-                                await useSkill(200, "defenseBoost", 0.75);
+                                await useSkill(20, "defenseBoost", 0.75);
                             }
                             else if(skillChoice === "3"){
                                 await useSkill(30, "heal", 20);
                             }
                             else if(skillChoice === "4"){
-                                await useSkill(50, "stealth", 0.5);
+                                await useSkill(15, "stealth", 30);
                             }
                             else if(skillChoice === "5"){
-                                await useSkill(100, "damageBoost", 1.5);
+                                await useSkill(35, "damageBoost", 1.5);
                             }
                             else if(skillChoice === "6"){
-                                eventText.textContent = "cancelled";
                                 skillWorked = true;
                             }
                             if (skillWorked){
@@ -184,11 +183,7 @@ async function combatLoop(){ // sets up the event listener for combat and comput
                         }
                     }
             }
-            else if(choice == "4"){ //allows a player to use Items like Potions, magic items, etc during battle
-                await slowPrint(eventText,  "\nYou have no items to use!");
-                isProcessing = false;
-            }
-            else if(choice == "5"){ //gives a player a chance to flee from the enemy
+            else if(choice == "4"){ //gives a player a chance to flee from the enemy
                 let roll = Math.floor(Math.random() * 100);
                 if (roll < fleeChance + 1){
                     await slowPrint(eventText,  "\n You flee from battle.");
@@ -242,7 +237,7 @@ async function useSkill(cost, effect, quantity){
     else if (effect === "stealth"){
         eventText.textContent = "";
         slowPrint(eventText, "You blend into the shadows, making it easier to flee!");
-        fleeChance += 20;
+        fleeChance += quantity;
     }
     else if (effect === "damageBoost"){
         slowPrint(eventText, "You focus your energy into a powerful strike, increasing your damage for the duration of the battle!");
@@ -289,16 +284,16 @@ async function combatEnd(userInput, fled){
 }
     await slowPrint(eventText,  "\nThe cave is quiet once again, save for the faint dripping of water on the stone floor.");
     choices.textContent = "\n 1. Continue";
-    userInput.addEventListener("keydown", function processContinue(event){
+    setHandler(processContinue);
+    function processContinue(event){
         if(event.key === "Enter"){
             let choice = userInput.value;
             userInput.value = "";
-            if (choice == "1"){
+            if (choice == "1"){          
                 goDeeper();
-                userInput.removeEventListener("keydown", processContinue);
             }
         }
-    });
+    };
 }
 
 function calcRewards(reward, chanceThreshold){
@@ -439,9 +434,10 @@ return true;
 }
 
 function runEncounter(){
-    if (combatEncounters >= 40){
+    encounterDifficulty = Math.round(combatEncounters / 5) + 3;
+    if (combatEncounters >= 20){
         eventText.textContent = "";
-        slowPrint(eventText, "As you venture deeper into the cave, you feel an ominous presence looming over you. Suddenly, a towering figure emerges from the shadows - the Guardian of the Artifact! \n Player HP: " + playerHP);
+        slowPrint(eventText, "You reach the heart of the cave. Peering inside a cavern, you see someting glinting - it is the Artifact! Suddenly, a towering figure emerges from the shadows - the Guardian of the Artifact! \n Player HP: " + playerHP);
         enemyId = 2;
     }
     else{
@@ -474,8 +470,9 @@ function noEncounter(){
         eventText.textContent = "";
         slowPrint(eventText, "You continue down the dark, damp path into the cave. \nHP: " + playerHP +
         "\nStamina: " + stamina + "\n What do you do?")
-        choices.textContent = "\n1. Go Deeper Into Cave \n2. Brew Potion \n3. Open Inventory \n4. Use Item";
-        userInput.addEventListener("keydown", function processInput(event){
+        choices.textContent = "\n1. Go Deeper Into Cave \n2. Brew Potion \n3. Open Inventory";
+        setHandler(processInput);
+        function processInput(event){
         if(event.key === "Enter"){
             let choice = userInput.value;
             userInput.value = "";
@@ -517,7 +514,7 @@ function noEncounter(){
                 });
             }
     }      
-});
+};
 }
 
 
